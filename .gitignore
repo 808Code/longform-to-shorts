@@ -1,2 +1,4 @@
 # Environments
 .lf_venv
+
+__pycache__
