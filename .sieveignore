@@ -1,4 +1,6 @@
 # Environments
-lf_venv
+.lf_venv
 
+
+.gitignore
 __pycache__
