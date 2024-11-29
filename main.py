@@ -3,10 +3,28 @@ import os
 import subprocess
 import shutil
 
+metadata = sieve.Metadata(
+    title="Long form video repurposing tool.",
+    description="Given a video generate multiple shorts that are highlights of the video.",
+    tags=["Video", "Audio"],
+    # image=sieve.Image(
+    #     path="logo.jpg"
+    # ),
+    # readme=open("README.md", "r").read(),
+)
 
+@sieve.function(
+    name="longform_to_shorts",
+    system_packages=["ffmpeg"],
+    python_version="3.10.12",
+    metadata=metadata
+)
 
-def longform_to_shorts(file):
-    #TODO: remove unnecessary setting.
+def longform_to_shorts(
+    file: sieve.File,
+):
+    #TODO: remove unnecessary setting.    
+    #TODO: exception handling.
     transcript_analysis_settings = {
         "transcription_backend": "groq-whisper",
         "llm_backend": "gpt-4o-2024-08-06",
@@ -75,7 +93,7 @@ def longform_to_shorts(file):
         end_time = highlight['end_time']
         output_file = f"{output_dir}/{title}_highlight.mp4"   
 
-        
+        #TODO: encoding
         ffmpeg_command = [
             "ffmpeg",
             "-y",                            # Allow overwriting
