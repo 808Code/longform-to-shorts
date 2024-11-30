@@ -27,7 +27,6 @@ metadata = sieve.Metadata(
 def longform_to_shorts(
     file: sieve.File,
     transcript_analysis_prompt : str = "",
-    target_language: str = "",
     autocrop_prompt: str = "person",
     autocrop_negative_prompt: str = "",
     min_scene_length: int = 0,
