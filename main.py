@@ -34,7 +34,6 @@ def longform_to_shorts(
     return_highlight_metadata : bool = False,
 
 ):
-    #TODO: remove unnecessary setting.
     transcript_analysis_settings = {
         "transcription_backend": "groq-whisper",
         "llm_backend": "gpt-4o-2024-08-06",
@@ -105,11 +104,11 @@ def longform_to_shorts(
 
         ffmpeg_command = [
             "ffmpeg",
-            "-y",                            
-            "-i", file.path,                 # Original video
-            "-ss", str(start_time),          
+            "-y",
+            "-ss", str(start_time),
+            "-i", file.path,                                
             "-to", str(end_time),            
-            "-c", "copy",                    # Copy streams without re-encoding
+            "-c", "copy",                    
             output_file                      
         ]
         try:
@@ -121,7 +120,8 @@ def longform_to_shorts(
         
         autocrop = sieve.function.get("sieve/autocrop")
         autocrop_outputs.append({'start' : start_time, 'end' : end_time, 'title' : highlight['title'], 'score': score, 'highlight' : autocrop.push(sieve.File(path = output_file), **autocrop_settings)}) 
-        
+    
+    #TODO async, make it so that first .result() doesn't block the rest.
     for autocrop_output in autocrop_outputs:
         for output_object in autocrop_output['highlight'].result():
             print(f'''Completed cropping the video with title {autocrop_output['title']}.''')
