@@ -30,7 +30,8 @@ def longform_to_shorts(
     autocrop_prompt: str = "person",
     autocrop_negative_prompt: str = "",
     min_scene_length: int = 0,
-    aspect_ratio: AspectRatioOptions = '9:16'
+    aspect_ratio: AspectRatioOptions = '9:16',
+    return_highlight_metadata : bool = False,
 
 ):
     #TODO: remove unnecessary setting.
@@ -89,7 +90,6 @@ def longform_to_shorts(
         if 'highlights' in output_object:
             highlights_output_object = output_object
             print(f"Total {len(highlights_output_object['highlights'])} highlights generated.")
-            # yield highlights_output_object
             break
 
     output_dir = "highlight_clips"
@@ -125,9 +125,11 @@ def longform_to_shorts(
     for autocrop_output in autocrop_outputs:
         for output_object in autocrop_output['highlight'].result():
             print(f'''Completed cropping the video with title {autocrop_output['title']}.''')
-            del autocrop_output['highlight'] 
-            autocrop_output.update({"video": sieve.Video(path = output_object.path)})
-            yield autocrop_output
+            del autocrop_output['highlight']
+            if return_highlight_metadata: 
+                autocrop_output.update({"video": sieve.Video(path = output_object.path)})
+                yield autocrop_output
+            yield sieve.Video(path = output_object.path)
     
     print("Completed cropping all highlights.")
     try:
