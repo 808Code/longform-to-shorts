@@ -49,7 +49,7 @@ def longform_to_shorts(
         "max_summary_length": 5,
         "max_title_length": 10,
         "num_tags": 5,
-        "target_language": target_language,
+        "target_language": "",
         "speaker_diarization": False,
         "use_vad": False,
         "denoise_audio": False,
