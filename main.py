@@ -78,6 +78,7 @@ def longform_to_shorts(
         "return_scene_data": False,
         "min_scene_length": min_scene_length,
     }
+    print("Starting...")
 
     transcript_analysis = sieve.function.get("sieve/transcript-analysis")
     transcript_analysis_output = transcript_analysis.push(file, **transcript_analysis_settings)
@@ -119,13 +120,13 @@ def longform_to_shorts(
             raise e
         
         autocrop = sieve.function.get("sieve/autocrop")
-        autocrop_outputs.append({'highlight' : autocrop.push(sieve.File(path = output_file), **autocrop_settings), 'title' : highlight['title'], 'score': score}) 
+        autocrop_outputs.append({'start' : start_time, 'end' : end_time, 'title' : highlight['title'], 'score': score, 'highlight' : autocrop.push(sieve.File(path = output_file), **autocrop_settings)}) 
         
     for autocrop_output in autocrop_outputs:
         for output_object in autocrop_output['highlight'].result():
             print(f'''Completed cropping the video with title {autocrop_output['title']}.''')
-            del autocrop_output['highlight']
-            autocrop_output.update(sieve.Video(path = output_object.path))
+            del autocrop_output['highlight'] 
+            autocrop_output.update({"video": sieve.Video(path = output_object.path)})
             yield autocrop_output
     
     print("Completed cropping all highlights.")
