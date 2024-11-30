@@ -83,11 +83,11 @@ def longform_to_shorts(
     transcript_analysis_output = transcript_analysis.push(file, **transcript_analysis_settings)
     print("Generating highlights.")
 
-
+    highlights_output_object = {}
     for output_object in transcript_analysis_output.result():
         if 'highlights' in output_object:
             highlights_output_object = output_object
-            print("Highlights generated.")
+            print(f"Total {len(highlights_output_object['highlights'])} highlights generated.")
             # yield highlights_output_object
             break
 
@@ -96,11 +96,11 @@ def longform_to_shorts(
 
     autocrop_outputs = []
     for highlight in highlights_output_object['highlights']:
-        title = highlight['title'].replace(" ", "_").replace("'", "").replace("?", "").replace(":", "")
+        valid_filename_title = highlight['title'].replace(" ", "_").replace("'", "").replace("?", "").replace(":", "")
         score = highlight['score']
         start_time = highlight['start_time']
         end_time = highlight['end_time']
-        output_file = f"{output_dir}/{title}_highlight.mp4"   
+        output_file = f"{output_dir}/{valid_filename_title}_highlight.mp4"   
 
         ffmpeg_command = [
             "ffmpeg",
@@ -115,17 +115,17 @@ def longform_to_shorts(
             subprocess.run(ffmpeg_command, check=True)
             print(f"Successfully created clip: {output_file}")
         except subprocess.CalledProcessError as e:
-            print(f"Error occurred while processing {title} with start at {str(start_time)} and end at {str(end_time)}.")
+            print(f"Error occurred while processing {highlight['title']} with start at {str(start_time)} and end at {str(end_time)}.")
             raise e
         
         autocrop = sieve.function.get("sieve/autocrop")
-        autocrop_outputs.append({'highlight' : autocrop.push(sieve.File(path = output_file), **autocrop_settings), 'title' : title, 'score': score}) 
+        autocrop_outputs.append({'highlight' : autocrop.push(sieve.File(path = output_file), **autocrop_settings), 'title' : highlight['title'], 'score': score}) 
         
     for autocrop_output in autocrop_outputs:
         for output_object in autocrop_output['highlight'].result():
             print(f'''Completed cropping the video with title {autocrop_output['title']}.''')
-            autocrop_output['url'] = sieve.Video(path = output_object.path)
             del autocrop_output['highlight']
+            autocrop_output.update(sieve.Video(path = output_object.path))
             yield autocrop_output
     
     print("Completed cropping all highlights.")
