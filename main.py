@@ -34,8 +34,7 @@ def longform_to_shorts(
     aspect_ratio: AspectRatioOptions = '9:16'
 
 ):
-    #TODO: remove unnecessary setting.    
-    #TODO: exception handling.
+    #TODO: remove unnecessary setting.
     transcript_analysis_settings = {
         "transcription_backend": "groq-whisper",
         "llm_backend": "gpt-4o-2024-08-06",
