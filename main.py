@@ -1,16 +1,20 @@
+from typing import Literal
 import sieve
 import os
 import subprocess
 import shutil
 
+
+AspectRatioOptions = Literal["1:1", "4:3", "3:4", "4:5", "5:4", "9:16"]
+
 metadata = sieve.Metadata(
     title="Long form video repurposing tool.",
     description="Given a video generate multiple shorts that are highlights of the video.",
     tags=["Video", "Audio"],
-    # image=sieve.Image(
-    #     path="logo.jpg"
-    # ),
-    # readme=open("README.md", "r").read(),
+    image=sieve.Image(
+        path="logo.jpg"
+    ),
+    readme=open("README.md", "r").read(),
 )
 
 @sieve.function(
@@ -22,13 +26,18 @@ metadata = sieve.Metadata(
 
 def longform_to_shorts(
     file: sieve.File,
+    transcript_analysis_prompt : str = "",
+    autocrop_prompt: str = "person",
+    autocrop_negative_prompt: str = "",
+    min_scene_length: int = 0,
+    aspect_ratio: AspectRatioOptions = '9:16'
+
 ):
-    #TODO: remove unnecessary setting.    
-    #TODO: exception handling.
+    #TODO: remove unnecessary setting.
     transcript_analysis_settings = {
         "transcription_backend": "groq-whisper",
         "llm_backend": "gpt-4o-2024-08-06",
-        "prompt": "",
+        "prompt": transcript_analysis_prompt,
         "generate_summary": False,
         "generate_title": False,
         "generate_tags": False,
@@ -52,7 +61,7 @@ def longform_to_shorts(
 
     autocrop_settings = {
         "active_speaker_detection": True,
-        "aspect_ratio": "9:16",
+        "aspect_ratio": aspect_ratio,
         "return_video": True,
         "start_time": 0,
         "end_time": -1,
@@ -61,24 +70,25 @@ def longform_to_shorts(
         "visualize": False,
         "include_subjects": False,
         "include_non_active_layouts": False,
-        "prompt": "person",
-        "negative_prompt": "",
+        "prompt": autocrop_prompt,
+        "negative_prompt": autocrop_negative_prompt,
         "single_crop_only": False,
         "crop_movement_speed": 0.1,
         "crop_sampling_interval": 3,
         "return_scene_data": False,
-        "min_scene_length": 0,
+        "min_scene_length": min_scene_length,
     }
+    print("Starting...")
 
     transcript_analysis = sieve.function.get("sieve/transcript-analysis")
     transcript_analysis_output = transcript_analysis.push(file, **transcript_analysis_settings)
     print("Generating highlights.")
 
-
+    highlights_output_object = {}
     for output_object in transcript_analysis_output.result():
         if 'highlights' in output_object:
             highlights_output_object = output_object
-            print("Highlights generated.")
+            print(f"Total {len(highlights_output_object['highlights'])} highlights generated.")
             # yield highlights_output_object
             break
 
@@ -87,37 +97,36 @@ def longform_to_shorts(
 
     autocrop_outputs = []
     for highlight in highlights_output_object['highlights']:
-        title = highlight['title'].replace(" ", "_").replace("'", "").replace("?", "").replace(":", "")
+        valid_filename_title = highlight['title'].replace(" ", "_").replace("'", "").replace("?", "").replace(":", "")
         score = highlight['score']
         start_time = highlight['start_time']
         end_time = highlight['end_time']
-        output_file = f"{output_dir}/{title}_highlight.mp4"   
+        output_file = f"{output_dir}/{valid_filename_title}_highlight.mp4"   
 
-        #TODO: encoding
         ffmpeg_command = [
             "ffmpeg",
-            "-y",                            # Allow overwriting
-            "-i", file.path,                 # Input video
-            "-ss", str(start_time),          # Start time
-            "-to", str(end_time),            # End time
+            "-y",                            
+            "-i", file.path,                 # Original video
+            "-ss", str(start_time),          
+            "-to", str(end_time),            
             "-c", "copy",                    # Copy streams without re-encoding
-            output_file                      # Output file
+            output_file                      
         ]
         try:
             subprocess.run(ffmpeg_command, check=True)
             print(f"Successfully created clip: {output_file}")
         except subprocess.CalledProcessError as e:
-            print(f"Error occurred while processing {title}.")
+            print(f"Error occurred while processing {highlight['title']} with start at {str(start_time)} and end at {str(end_time)}.")
             raise e
         
         autocrop = sieve.function.get("sieve/autocrop")
-        autocrop_outputs.append({'highlight' : autocrop.push(sieve.File(path = output_file), **autocrop_settings), 'title' : title, 'score': score}) 
+        autocrop_outputs.append({'start' : start_time, 'end' : end_time, 'title' : highlight['title'], 'score': score, 'highlight' : autocrop.push(sieve.File(path = output_file), **autocrop_settings)}) 
         
     for autocrop_output in autocrop_outputs:
         for output_object in autocrop_output['highlight'].result():
             print(f'''Completed cropping the video with title {autocrop_output['title']}.''')
-            autocrop_output['url'] = sieve.Video(path = output_object.path)
-            del autocrop_output['highlight']
+            del autocrop_output['highlight'] 
+            autocrop_output.update({"video": sieve.Video(path = output_object.path)})
             yield autocrop_output
     
     print("Completed cropping all highlights.")
