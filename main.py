@@ -30,10 +30,10 @@ def longform_to_shorts(
     autocrop_prompt: str = "person",
     autocrop_negative_prompt: str = "",
     min_scene_length: int = 0,
-    aspect_ratio: AspectRatioOptions = '9:16'
+    aspect_ratio: AspectRatioOptions = '9:16',
+    return_highlight_metadata : bool = False,
 
 ):
-    #TODO: remove unnecessary setting.
     transcript_analysis_settings = {
         "transcription_backend": "groq-whisper",
         "llm_backend": "gpt-4o-2024-08-06",
@@ -89,7 +89,6 @@ def longform_to_shorts(
         if 'highlights' in output_object:
             highlights_output_object = output_object
             print(f"Total {len(highlights_output_object['highlights'])} highlights generated.")
-            # yield highlights_output_object
             break
 
     output_dir = "highlight_clips"
@@ -105,11 +104,11 @@ def longform_to_shorts(
 
         ffmpeg_command = [
             "ffmpeg",
-            "-y",                            
-            "-i", file.path,                 # Original video
-            "-ss", str(start_time),          
+            "-y",
+            "-ss", str(start_time),
+            "-i", file.path,                                
             "-to", str(end_time),            
-            "-c", "copy",                    # Copy streams without re-encoding
+            "-c", "copy",                    
             output_file                      
         ]
         try:
@@ -121,13 +120,16 @@ def longform_to_shorts(
         
         autocrop = sieve.function.get("sieve/autocrop")
         autocrop_outputs.append({'start' : start_time, 'end' : end_time, 'title' : highlight['title'], 'score': score, 'highlight' : autocrop.push(sieve.File(path = output_file), **autocrop_settings)}) 
-        
+    
+    #TODO async, make it so that first .result() doesn't block the rest.
     for autocrop_output in autocrop_outputs:
         for output_object in autocrop_output['highlight'].result():
             print(f'''Completed cropping the video with title {autocrop_output['title']}.''')
-            del autocrop_output['highlight'] 
-            autocrop_output.update({"video": sieve.Video(path = output_object.path)})
-            yield autocrop_output
+            del autocrop_output['highlight']
+            if return_highlight_metadata: 
+                autocrop_output.update({"video": sieve.Video(path = output_object.path)})
+                yield autocrop_output
+            yield sieve.Video(path = output_object.path)
     
     print("Completed cropping all highlights.")
     try:
