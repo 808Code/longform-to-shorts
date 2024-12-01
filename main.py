@@ -121,9 +121,8 @@ async def longform_to_shorts(
 
 # Synchronous wrapper to consume an asynchronous generator
 def sync_generator(async_gen_func, *args, **kwargs):
-    # loop = asyncio.get_event_loop()
-    loop = asyncio.new_event_loop()  # Create a new event loop
-    asyncio.set_event_loop(loop)  # Set it as the current event loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
     async_gen = async_gen_func(*args, **kwargs)
     try:
@@ -132,8 +131,7 @@ def sync_generator(async_gen_func, *args, **kwargs):
     except StopAsyncIteration:
         pass
     finally:
-        loop.close()  # Close the loop when done
-
+        loop.close()
 
 @sieve.function(
     name="longform_to_shorts",
@@ -162,7 +160,7 @@ def main(
         yield item
 
 
-if __name__ == "__main__":
-    file = sieve.File(url="https://storage.googleapis.com/sieve-prod-us-central1-public-file-upload-bucket/c4d968f5-f25a-412b-9102-5b6ab6dafcb4/66c0d5ca-71fe-487f-ae1e-ddd9dea5a35f-tmpz1wbqhxm.mp4")
-    for item in main(file = file):
-        print(item)
+# if __name__ == "__main__":
+#     file = sieve.File(url="https://storage.googleapis.com/sieve-prod-us-central1-public-file-upload-bucket/c4d968f5-f25a-412b-9102-5b6ab6dafcb4/66c0d5ca-71fe-487f-ae1e-ddd9dea5a35f-tmpz1wbqhxm.mp4")
+#     for item in main(file = file):
+#         print(item)
