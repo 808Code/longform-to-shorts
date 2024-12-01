@@ -148,6 +148,18 @@ def main(
     aspect_ratio: AspectRatioOptions = '9:16',
     return_highlight_metadata : bool = False,
 ):
+    """
+    Generate video highlights from a YouTube video.
+
+    :param file: The video file to process.
+    :param transcript_analysis_prompt: A custom prompt to guide the LLM's analysis. This influences the focus areas, themes, and overall output of the analysis.
+    :param autocrop_prompt: A description of the primary subject of focus, such as the most important element in the scene, the main speaker, or the standout object.
+    :param autocrop_negative_prompt: A description of elements to avoid focusing on, such as background objects, logos, blurry objects, large crowds, or any irrelevant details (e.g., backdrops, news graphics, or non-visible faces).
+    :param min_scene_length: The minimum duration (in seconds) for each scene in the output highlights.
+    :param return_highlight_metadata: If True, generates metadata for the highlight video, including the score, title, start time, and end time of each highlight segment from the original video.
+    """
+
+
     for item in sync_generator(longform_to_shorts, **{
         'file': file,
         'transcript_analysis_prompt': transcript_analysis_prompt,
