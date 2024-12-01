@@ -21,12 +21,7 @@ metadata = sieve.Metadata(
     readme=open("README.md", "r").read(),
 )
 
-@sieve.function(
-    name="longform_to_shorts",
-    system_packages=["ffmpeg"],
-    python_version="3.10.12",
-    metadata=metadata
-)
+
 async def longform_to_shorts(
     file: sieve.File,
     transcript_analysis_prompt : str = "",
@@ -123,12 +118,51 @@ async def longform_to_shorts(
         print(f"Error while deleting folder {output_dir}: {e}")
     return
 
-    
 
-# if __name__ == "__main__":
-#     async def run_main():
-#         file = sieve.File(url="https://storage.googleapis.com/sieve-prod-us-central1-public-file-upload-bucket/1298ba8e-e767-4585-b6ba-89d1408544f1/b0044379-d1c3-40a4-bf73-d134260c9a55-input-file.mp4")
-#         async for output in longform_to_shorts(file):
-#             print("Final output:", output)
+# Synchronous wrapper to consume an asynchronous generator
+def sync_generator(async_gen_func, *args, **kwargs):
+    # loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()  # Create a new event loop
+    asyncio.set_event_loop(loop)  # Set it as the current event loop
 
-#     asyncio.run(run_main())
+    async_gen = async_gen_func(*args, **kwargs)
+    try:
+        while True:
+            yield loop.run_until_complete(async_gen.__anext__())
+    except StopAsyncIteration:
+        pass
+    finally:
+        loop.close()  # Close the loop when done
+
+
+@sieve.function(
+    name="longform_to_shorts",
+    system_packages=["ffmpeg"],
+    python_version="3.10.12",
+    metadata=metadata
+)
+def main(
+    file: sieve.File,
+    transcript_analysis_prompt : str = "",
+    autocrop_prompt: str = "person",
+    autocrop_negative_prompt: str = "",
+    min_scene_length: int = 0,
+    aspect_ratio: AspectRatioOptions = '9:16',
+    return_highlight_metadata : bool = False,
+):
+    for item in sync_generator(longform_to_shorts, **{
+        'file': file,
+        'transcript_analysis_prompt': transcript_analysis_prompt,
+        'autocrop_prompt': autocrop_prompt,
+        'autocrop_negative_prompt': autocrop_negative_prompt,
+        'min_scene_length': min_scene_length,
+        'aspect_ratio': aspect_ratio,
+        'return_highlight_metadata' : return_highlight_metadata,
+    }):
+        yield item
+
+
+if __name__ == "__main__":
+    file = sieve.File(url="https://storage.googleapis.com/sieve-prod-us-central1-public-file-upload-bucket/c4d968f5-f25a-412b-9102-5b6ab6dafcb4/66c0d5ca-71fe-487f-ae1e-ddd9dea5a35f-tmpz1wbqhxm.mp4")
+    for item in main(file = file):
+        print(item)
