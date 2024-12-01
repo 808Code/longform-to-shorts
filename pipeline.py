@@ -149,8 +149,7 @@ def longform_to_shorts(
     return_highlight_metadata : bool = False,
 ):
     """
-    Generate video highlights from a YouTube video.
-
+    Generate vertical video highlights with a focus on faces from a given video.
     :param file: The video file to process.
     :param transcript_analysis_prompt: A custom prompt to guide the LLM's analysis. This influences the focus areas, themes, and overall output of the analysis.
     :param autocrop_prompt: A description of the primary subject of focus, such as the most important element in the scene, the main speaker, or the standout object.
