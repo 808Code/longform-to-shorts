@@ -14,6 +14,7 @@ AspectRatioOptions = Literal["1:1", "4:3", "3:4", "4:5", "5:4", "9:16"]
 metadata = sieve.Metadata(
     title="Long form video repurposing tool.",
     description="Given a video generate multiple shorts that are highlights of the video.",
+    code_url = 'https://github.com/808Code/longform_to_shorts',
     tags=["Video", "Audio"],
     image=sieve.Image(
         path="logo.jpg"
