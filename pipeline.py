@@ -22,7 +22,7 @@ metadata = sieve.Metadata(
 )
 
 
-async def longform_to_shorts(
+async def get_longform_to_shorts(
     file: sieve.File,
     transcript_analysis_prompt : str = "",
     autocrop_prompt: str = "person",
@@ -139,7 +139,7 @@ def sync_generator(async_gen_func, *args, **kwargs):
     python_version="3.10.12",
     metadata=metadata
 )
-def main(
+def longform_to_shorts(
     file: sieve.File,
     transcript_analysis_prompt : str = "",
     autocrop_prompt: str = "person",
@@ -160,7 +160,7 @@ def main(
     """
 
 
-    for item in sync_generator(longform_to_shorts, **{
+    for item in sync_generator(get_longform_to_shorts, **{
         'file': file,
         'transcript_analysis_prompt': transcript_analysis_prompt,
         'autocrop_prompt': autocrop_prompt,
@@ -172,7 +172,7 @@ def main(
         yield item
 
 
-# if __name__ == "__main__":
-#     file = sieve.File(url="https://storage.googleapis.com/sieve-prod-us-central1-public-file-upload-bucket/c4d968f5-f25a-412b-9102-5b6ab6dafcb4/66c0d5ca-71fe-487f-ae1e-ddd9dea5a35f-tmpz1wbqhxm.mp4")
-#     for item in main(file = file):
-#         print(item)
+if __name__ == "__main__":
+    file = sieve.File(url="https://storage.googleapis.com/sieve-prod-us-central1-public-file-upload-bucket/c4d968f5-f25a-412b-9102-5b6ab6dafcb4/66c0d5ca-71fe-487f-ae1e-ddd9dea5a35f-tmpz1wbqhxm.mp4")
+    for item in longform_to_shorts(file = file):
+        print(item)
