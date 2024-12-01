@@ -33,7 +33,7 @@ You can find your API key at [https://www.sievedata.com/dashboard/settings](http
 Then deploy the function to your account:
 
 ```bash
-git clone <link>
+git clone https://github.com/808Code/longform_to_shorts
 cd longform_to_shorts
 sieve deploy pipeline.py
 ```
