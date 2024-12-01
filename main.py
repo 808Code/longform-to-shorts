@@ -1,8 +1,12 @@
-from typing import Literal
+import asyncio
 import sieve
 import os
 import subprocess
 import shutil
+
+from typing import Literal
+from async_autocrop import AutoCropper
+
 
 
 AspectRatioOptions = Literal["1:1", "4:3", "3:4", "4:5", "5:4", "9:16"]
@@ -23,8 +27,7 @@ metadata = sieve.Metadata(
     python_version="3.10.12",
     metadata=metadata
 )
-
-def longform_to_shorts(
+async def longform_to_shorts(
     file: sieve.File,
     transcript_analysis_prompt : str = "",
     autocrop_prompt: str = "person",
@@ -59,25 +62,6 @@ def longform_to_shorts(
         "custom_vocabulary": {"": ""}
     }
 
-    autocrop_settings = {
-        "active_speaker_detection": True,
-        "aspect_ratio": aspect_ratio,
-        "return_video": True,
-        "start_time": 0,
-        "end_time": -1,
-        "speed_boost": False,
-        "smart_edit": False,
-        "visualize": False,
-        "include_subjects": False,
-        "include_non_active_layouts": False,
-        "prompt": autocrop_prompt,
-        "negative_prompt": autocrop_negative_prompt,
-        "single_crop_only": False,
-        "crop_movement_speed": 0.1,
-        "crop_sampling_interval": 3,
-        "return_scene_data": False,
-        "min_scene_length": min_scene_length,
-    }
     print("Starting...")
 
     transcript_analysis = sieve.function.get("sieve/transcript-analysis")
@@ -94,7 +78,7 @@ def longform_to_shorts(
     output_dir = "highlight_clips"
     os.makedirs(output_dir, exist_ok=True)
 
-    autocrop_outputs = []
+    highlight_metadatas = []
     for highlight in highlights_output_object['highlights']:
         valid_filename_title = highlight['title'].replace(" ", "_").replace("'", "").replace("?", "").replace(":", "")
         score = highlight['score']
@@ -118,18 +102,18 @@ def longform_to_shorts(
             print(f"Error occurred while processing {highlight['title']} with start at {str(start_time)} and end at {str(end_time)}.")
             raise e
         
-        autocrop = sieve.function.get("sieve/autocrop")
-        autocrop_outputs.append({'start' : start_time, 'end' : end_time, 'title' : highlight['title'], 'score': score, 'highlight' : autocrop.push(sieve.File(path = output_file), **autocrop_settings)}) 
-    
-    #TODO async, make it so that first .result() doesn't block the rest.
-    for autocrop_output in autocrop_outputs:
-        for output_object in autocrop_output['highlight'].result():
-            print(f'''Completed cropping the video with title {autocrop_output['title']}.''')
-            del autocrop_output['highlight']
-            if return_highlight_metadata: 
-                autocrop_output.update({"video": sieve.Video(path = output_object.path)})
-                yield autocrop_output
-            yield sieve.Video(path = output_object.path)
+        highlight_metadatas.append({'start' : start_time, 'end' : end_time, 'title' : highlight['title'], 'score': score, 'file' : output_file}) 
+        auto_cropper = AutoCropper(
+            autocrop_prompt = autocrop_prompt,
+            autocrop_negative_prompt = autocrop_negative_prompt,
+            min_scene_length = min_scene_length,
+            aspect_ratio = aspect_ratio,
+            return_highlight_metadata = return_highlight_metadata,
+            highlight_metadatas = highlight_metadatas
+        )
+
+    async for result in auto_cropper.process_crop_results():
+        yield result
     
     print("Completed cropping all highlights.")
     try:
@@ -141,7 +125,10 @@ def longform_to_shorts(
 
     
 
-if __name__=="__main__":
-    file = sieve.File(url="https://storage.googleapis.com/sieve-prod-us-central1-public-file-upload-bucket/6080b622-6e32-4281-90ae-6afbdc8506d7/8b7ac40b-3a44-48f1-b17b-35eba04e30a7-input-file.mp4")
-    for result in longform_to_shorts(file):
-        print(result)
+# if __name__ == "__main__":
+#     async def run_main():
+#         file = sieve.File(url="https://storage.googleapis.com/sieve-prod-us-central1-public-file-upload-bucket/1298ba8e-e767-4585-b6ba-89d1408544f1/b0044379-d1c3-40a4-bf73-d134260c9a55-input-file.mp4")
+#         async for output in longform_to_shorts(file):
+#             print("Final output:", output)
+
+#     asyncio.run(run_main())
