@@ -15,6 +15,13 @@ class AutoCropper:
         self.aspect_ratio = aspect_ratio
 
     async def autocrop(self, highlight):
+        
+        """
+        Crops a video with focus on faces to an desired aspect ratio.
+        :param highlight: A Json object that represents a highlight video without face crop, including its start time, end time, and score.
+        :return: The Json object that represents a highlight video with face crop, including its start time, end time, and score.
+        """ 
+                
         file_path = highlight['file']
         file = sieve.File(path=file_path)
         autocrop = sieve.function.get("sieve/autocrop")
@@ -29,16 +36,19 @@ class AutoCropper:
             if self.return_video_only:
                 return sieve.Video(path = output_object.path)            
             else:
+                del highlight['file']
                 return {**highlight, 'video': sieve.Video(path = output_object.path)}
             
-                
-    async def async_autocrop_highlights(self):
+
+    async def process_all_highlights(self):
+        """
+        Asynchronously processes multiple video highlights for cropping.
+        This method yields each result from cropping a highlight as they complete.
+
+        :yield: A json object that represents a highlight video with face crop, including its start time, end time, and score.
+        """
         tasks = [self.autocrop(highlight) for highlight in self.highlights]
 
         for task in asyncio.as_completed(tasks):
             result = await task
-            yield result
-
-    async def process_all_highlights(self):
-        async for result in self.async_autocrop_highlights():
             yield result
