@@ -8,7 +8,7 @@ It consists of the following steps:
 
 * Generate the highlights of a video with the [transcript-analysis](https://www.sievedata.com/functions/sieve/transcript-analysis) Sieve function.
 * Split the video into segments based on the start and end times of the generated highlights.
-* Face focused videos is generated using autocrop [autocrop](https://www.sievedata.com/functions/sieve/autocrop).
+* Face focused videos are generated from theses video segments using autocrop [autocrop](https://www.sievedata.com/functions/sieve/autocrop).
 
 
 ## Tutorial
