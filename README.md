@@ -19,8 +19,8 @@ A detailed explanation of the pipeline is provided in this tutorial.
 
 * `file`: The video file to process.
 * `aspect_ratio`: The aspect ratio to crop the video to.
-* `return_video_only`: If True, returns only the generated face-cropped highlight videos; otherwise, includes additional details such as the score, title, start time, and end time for each highlight segment from the original video.
-
+* `return_video_only` (default: False) determines whether to return only the generated face-cropped highlight videos (`True`) or include additional details such as the score, title, start time, and end time for each highlight segment from the original video (`False`).
+  
 ## Deploying `longform-to-shorts` to your own Sieve account
 
 First ensure you have the Sieve Python SDK installed: `pip install sievedata` and set `SIEVE_API_KEY` to your Sieve API key.
