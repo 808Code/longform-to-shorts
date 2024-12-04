@@ -4,5 +4,4 @@
 
 .gitignore
 __pycache__
-highlight_clips
 *.mp4
