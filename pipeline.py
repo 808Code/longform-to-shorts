@@ -140,6 +140,7 @@ def generate_highlights(file, transcript_analysis_output, output_dir):
         score = highlight['score']
         start_time = highlight['start_time']
         end_time = highlight['end_time']
+        duration = highlight['duration']
         output_file = f"{output_dir}/{valid_filename_title}_highlight.mp4"   
 
         ffmpeg_command = [
@@ -147,7 +148,7 @@ def generate_highlights(file, transcript_analysis_output, output_dir):
             "-y",
             "-ss", str(start_time),
             "-i", file.path,                                
-            "-to", str(end_time),            
+            "-to", str(duration),            
             "-c", "copy",                    
             output_file                      
         ]
