@@ -1,13 +1,11 @@
-import asyncio
 import sieve
-import os
-import subprocess
-import shutil
 
 from typing import Literal
-from async_autocrop import AutoCropper
 
 
+transcript_analysis = sieve.function.get("sieve/transcript-analysis")
+autocrop = sieve.function.get("sieve/autocrop")    
+    
 metadata = sieve.Metadata(
     title="Long form video repurposing",
     description="Given a video generate multiple shorts that are highlights of the video.",
@@ -22,6 +20,36 @@ metadata = sieve.Metadata(
 
 AspectRatioOptions = Literal["1:1", "4:3", "3:4", "4:5", "5:4", "9:16"]
 
+def get_highlights(transcript_analysis_output):
+    highlights = []
+    for transcript_analysis_output_object in transcript_analysis_output.result():
+        if 'highlights' in transcript_analysis_output_object:
+            highlights = transcript_analysis_output_object['highlights']
+            break
+    return highlights
+
+def apply_autocrops(highlights, aspect_ratio):
+    autocrop_outputs = []
+    for highlight in highlights:
+        output = autocrop.push(
+            file, 
+            return_video = True, 
+            start_time = highlight['start_time'], 
+            end_time = highlight['end_time'], 
+            aspect_ratio = aspect_ratio
+        )
+        autocrop_outputs.append((output, highlight))
+    return autocrop_outputs
+
+def poll_autocrop_jobs(autocrop_outputs):
+    for autocrop_output, highlight in autocrop_outputs:
+        for autocrop_output_object in autocrop_output.result():
+            print("Autocrop completed on a video")
+            yield (sieve.File(path = autocrop_output_object.path), highlight)
+    
+
+      
+
 @sieve.function(
     name="longform-to-shorts",
     system_packages=["ffmpeg"],
@@ -31,139 +59,31 @@ AspectRatioOptions = Literal["1:1", "4:3", "3:4", "4:5", "5:4", "9:16"]
 def longform_to_shorts(
     file: sieve.File,
     aspect_ratio: AspectRatioOptions = '9:16',
-    return_video_only : bool = False,
-):
+    ):
     """
-    Generates highlight videos with a new aspect ratio, focusing on faces from a given video.
-    
-    :param file: The video file to process.
-    :param aspect_ratio: The aspect ratio to crop the video to.
-    :param return_video_only: If set to `True`, only highlight videos with face-focused cropping are returned; otherwise, the response includes all generated videos along with their score, title, start time, and end time.
-    :yield: The json object, that represents a highlight video with autocrop applied, including its start time, end time, and score.
-    """
-
-    for item in sync_generator(get_longform_to_shorts, **{
-        'file': file,
-        'aspect_ratio': aspect_ratio,
-        'return_video_only' : return_video_only,
-    }):
-        yield item
-
-async def get_longform_to_shorts(
-    file: sieve.File,
-    aspect_ratio: AspectRatioOptions = '9:16',
-    return_video_only : bool = False,
-):
-    """
-    Generates highlight videos synchronously and applies autocrop asynchronously.
+    Generates face focused highlight videos
 
     :param aspect_ratio: The aspect ratio to crop the video to.
     :param return_video_only: If set to `True`, only highlight videos with face-focused cropping are returned; otherwise, the response includes all generated videos along with their score, title, start time, and end time.
-    :yield: The json object, that represents a highlight video with autocrop applied, including its start time, end time, and score.
+    :yield: A tuple containing a face focused highlight video along with its metadata.
     """
 
     print("Starting...")
 
-    transcript_analysis = sieve.function.get("sieve/transcript-analysis")
-    transcript_analysis_output = transcript_analysis.push(file, generate_highlights = True)
+    transcript_analysis_output = transcript_analysis.push(file, generate_highlights = True)    
+    print("Generating highlights")
+
+    highlights = get_highlights(transcript_analysis_output)
     
-    print("Highlight generations have started.")
-    highlights_dir = "highlight_clips"    
-    highlights = generate_highlights(file, transcript_analysis_output, highlights_dir)
-    
-    print("Highlights generation has completed.")
-    
+    autocrop_outputs = apply_autocrops(highlights, aspect_ratio)
+    print("Applying autocrop")
 
-    auto_cropper = AutoCropper(
-        aspect_ratio = aspect_ratio,
-        return_video_only = return_video_only,
-        highlights = highlights
-        )
-
-    
-    print("Highlights autocrop has started.")
-    async for result in auto_cropper.process_all_highlights():
-        yield result
-    
-    print("Highlights autocrop has completed.")
-    
-    try:
-        shutil.rmtree(highlights_dir)
-        print(f"Deleted folder: {highlights_dir}")
-    except Exception as e:
-        print(f"Error while deleting folder {highlights_dir}: {e}")
-    return
-
-def sync_generator(async_gen_func, *args, **kwargs):
-    """
-    Converts an asynchronous generator function into a synchronous generator.
-
-    :param async_gen_func: The asynchronous generator function to convert.
-    :param args: Positional arguments to pass to the asynchronous generator function.
-    :param kwargs: Keyword arguments to pass to the asynchronous generator function.
-    :yield: Items generated by the asynchronous generator, evaluated synchronously.
-    """
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    async_gen = async_gen_func(*args, **kwargs)
-    try:
-        while True:
-            yield loop.run_until_complete(async_gen.__anext__())
-    except StopAsyncIteration:
-        pass
-    finally:
-        loop.close()
-
-
-def generate_highlights(file, transcript_analysis_output, output_dir):
-    """
-    Generates highlight videos from a source video using transcript analysis.
-
-    :param file: The source video file to process.
-    :param transcript_analysis_output: The output of a transcript analysis job on the source video.
-    :param output_dir: The directory to store the highlight videos.
-    :return: A list of JSON objects, where each object represents a highlight video and includes its start time, end time, and score.
-    """    
-    
-    os.makedirs(output_dir, exist_ok=True)
-    highlights_output_object = {}
-    for output_object in transcript_analysis_output.result():
-        if 'highlights' in output_object:
-            highlights_output_object = output_object
-            print(f"Total {len(highlights_output_object['highlights'])} highlights generated.")
-            break
-
-    highlights = []
-    for highlight in highlights_output_object['highlights']:
-        valid_filename_title = highlight['title'].replace(" ", "_").replace("'", "").replace("?", "").replace(":", "")
-        score = highlight['score']
-        start_time = highlight['start_time']
-        end_time = highlight['end_time']
-        duration = highlight['duration']
-        output_file = f"{output_dir}/{valid_filename_title}_highlight.mp4"   
-
-        ffmpeg_command = [
-            "ffmpeg",
-            "-y",
-            "-ss", str(start_time),
-            "-i", file.path,                                
-            "-to", str(duration),            
-            "-c", "copy",                    
-            output_file                      
-        ]
-        try:
-            subprocess.run(ffmpeg_command, check=True)
-            print(f"Successfully created clip: {output_file}")
-        except subprocess.CalledProcessError as e:
-            print(f"Error occurred while processing {highlight['title']} with start at {str(start_time)} and end at {str(end_time)}.")
-            raise e
-        
-        highlights.append({'start' : start_time, 'end' : end_time, 'title' : highlight['title'], 'score': score, 'file' : output_file}) 
-    return highlights
+    for complete_autocrop_job in poll_autocrop_jobs(autocrop_outputs):
+        yield complete_autocrop_job
+ 
 
 
 if __name__ == "__main__":
-    file = sieve.File(url="https://storage.googleapis.com/sieve-prod-us-central1-public-file-upload-bucket/1298ba8e-e767-4585-b6ba-89d1408544f1/b0044379-d1c3-40a4-bf73-d134260c9a55-input-file.mp4")
+    file = sieve.File(url="https://storage.googleapis.com/sieve-prod-us-central1-public-file-upload-bucket/c4d968f5-f25a-412b-9102-5b6ab6dafcb4/2abf06c9-05a7-45a7-b3fd-bc1b4d4ae800-tmpz1wbqhxm.mp4")
     for item in longform_to_shorts(file = file):
         print(item)

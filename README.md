@@ -6,10 +6,9 @@ This Sieve pipeline creates multiple video highlights in different aspect ratios
 
 It consists of the following steps:
 
-* Generate the highlights of a video with the [transcript-analysis](https://www.sievedata.com/functions/sieve/transcript-analysis) Sieve function.
-* Split the video into segments based on the start and end times of the generated highlights.
-* Face focused videos are generated from the video segments using autocrop [autocrop](https://www.sievedata.com/functions/sieve/autocrop).
+- Generate the highlights of a video with the [transcript-analysis](https://www.sievedata.com/functions/sieve/transcript-analysis) sieve function.
 
+- Face-focused highlight videos are created based on the start and end times of each highlight, combined with the [autocrop](https://www.sievedata.com/functions/sieve/autocrop) sieve function.
 
 ## Tutorial
 
@@ -17,10 +16,9 @@ A detailed explanation of the pipeline is provided in this tutorial.
 
 ## Options
 
-* `file`: The video file to process.
-* `aspect_ratio`: The aspect ratio to crop the video to.
-* `return_video_only` (default: False) determines whether to return only the generated face-cropped highlight videos (`True`) or include additional details such as the score, title, start time, and end time for each highlight segment from the original video (`False`).
-  
+- `file`: The video file to process.
+- `aspect_ratio`: The aspect ratio to crop the video to.
+
 ## Deploying `longform-to-shorts` to your own Sieve account
 
 First ensure you have the Sieve Python SDK installed: `pip install sievedata` and set `SIEVE_API_KEY` to your Sieve API key.
