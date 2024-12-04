@@ -42,23 +42,11 @@ def longform_to_shorts(
     transcript_analysis_output = transcript_analysis.push(file, generate_highlights = True)    
     print("Generating highlights")
 
-    highlights = get_highlights(transcript_analysis_output)
-    print("Highlights generated")
-    
-    autocrop_outputs = apply_autocrops(file, highlights, aspect_ratio)
-    print("Applying autocrop")
-
-    for complete_autocrop_job in poll_autocrop_jobs(autocrop_outputs):
-        yield complete_autocrop_job
- 
-
-def get_highlights(transcript_analysis_output):
     HIGHLIGHTS_INDEX = 5   
     transcript_analysis_object = transcript_analysis_output.result() 
     highlights = list(transcript_analysis_object)[HIGHLIGHTS_INDEX]['highlights']
-    return highlights
+    print("Highlights generated")
 
-def apply_autocrops(file, highlights, aspect_ratio):
     autocrop_outputs = []
     for highlight in highlights:
         output = autocrop.push(
@@ -69,14 +57,13 @@ def apply_autocrops(file, highlights, aspect_ratio):
             aspect_ratio = aspect_ratio
         )
         autocrop_outputs.append((output, highlight))
-    return autocrop_outputs
 
-def poll_autocrop_jobs(autocrop_outputs):
+    print("Applying autocrop")
     for autocrop_output, highlight in autocrop_outputs:
         for autocrop_output_object in autocrop_output.result():
             print("Autocrop completed on a video")
             yield (sieve.File(path = autocrop_output_object.path), highlight)
-    
+
 if __name__ == "__main__":
     file = sieve.File(url="https://storage.googleapis.com/sieve-prod-us-central1-public-file-upload-bucket/c4d968f5-f25a-412b-9102-5b6ab6dafcb4/2abf06c9-05a7-45a7-b3fd-bc1b4d4ae800-tmpz1wbqhxm.mp4")
     for item in longform_to_shorts(file = file):
