@@ -43,6 +43,7 @@ def longform_to_shorts(
     print("Generating highlights")
 
     highlights = get_highlights(transcript_analysis_output)
+    print("Highlights generated")
     
     autocrop_outputs = apply_autocrops(file, highlights, aspect_ratio)
     print("Applying autocrop")
@@ -52,8 +53,9 @@ def longform_to_shorts(
  
 
 def get_highlights(transcript_analysis_output):
-    HIGHLIGHTS_INDEX = 5    
-    highlights = list(transcript_analysis_output.result())[HIGHLIGHTS_INDEX]['highlights']
+    HIGHLIGHTS_INDEX = 5   
+    transcript_analysis_object = transcript_analysis_output.result() 
+    highlights = list(transcript_analysis_object)[HIGHLIGHTS_INDEX]['highlights']
     return highlights
 
 def apply_autocrops(file, highlights, aspect_ratio):
