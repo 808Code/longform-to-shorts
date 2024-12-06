@@ -12,7 +12,7 @@ It consists of the following steps:
 
 ## Tutorial
 
-A detailed explanation of the pipeline is provided in this tutorial.
+A detailed explanation of the pipeline is provided in this [tutorial](https://www.sievedata.com/resources/how-to-build-long-form-video-repurposing-tool).
 
 ## Options
 
